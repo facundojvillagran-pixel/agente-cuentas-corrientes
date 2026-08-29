@@ -1,0 +1,10 @@
+[project]
+name = "cuentas-corrientes-agent"
+version = "0.1.0"
+description = "Motor trazable para cuentas corrientes asistidas por IA"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
