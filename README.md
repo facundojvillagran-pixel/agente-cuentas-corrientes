@@ -21,7 +21,13 @@ La IA documental y la interfaz web se agregaran sobre este motor. La IA interpre
 No requiere dependencias externas en esta etapa:
 
 ```bash
-python3 -m unittest discover -s tests -v
+.venv/bin/python -m pytest -q
+```
+
+Para iniciar la API local durante el desarrollo:
+
+```bash
+.venv/bin/uvicorn cuentas_corrientes.api:app --reload
 ```
 
 ## Seguridad
@@ -29,4 +35,3 @@ python3 -m unittest discover -s tests -v
 - No guardar claves de API en el repositorio.
 - Usar `.env` solamente en la instalacion local.
 - No incorporar documentacion real hasta habilitar almacenamiento privado, usuarios y copias de seguridad.
-
