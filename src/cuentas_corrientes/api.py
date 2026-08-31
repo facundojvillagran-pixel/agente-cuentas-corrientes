@@ -2,17 +2,23 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+import os
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from .domain import Account, Direction, Evidence, Movement, MovementStatus, ReviewRequired
 from .intake import interpret_text
+from .storage import AccountStore
 
 
 app = FastAPI(title="Agente de cuentas corrientes", version="0.1.0")
-_accounts: dict[str, Account] = {}
+_default_db = Path.cwd() / "data" / "cuentas.sqlite3"
+_store = AccountStore(os.environ.get("CUENTAS_DB_PATH", str(_default_db)))
+_accounts: dict[str, Account] = _store.load_all()
 
 
 class AccountCreate(BaseModel):
@@ -67,7 +73,16 @@ def health() -> dict[str, str]:
 def create_account(payload: AccountCreate) -> dict[str, str]:
     account_id = str(uuid4())
     _accounts[account_id] = Account(payload.company, payload.counterparty)
+    _store.save(account_id, _accounts[account_id])
     return {"id": account_id, "company": payload.company, "counterparty": payload.counterparty}
+
+
+@app.get("/accounts")
+def list_accounts() -> list[dict[str, str]]:
+    return [
+        {"id": account_id, "company": account.company, "counterparty": account.counterparty}
+        for account_id, account in sorted(_accounts.items(), key=lambda item: item[1].counterparty.casefold())
+    ]
 
 
 def _account(account_id: str) -> Account:
@@ -94,6 +109,8 @@ def add_movement(account_id: str, payload: MovementCreate) -> dict[str, str | bo
             unassigned_amount=payload.unassigned_amount,
         )
         added = account.add_movement(movement, actor="api-user")
+        if added:
+            _store.save(account_id, account)
     except (ValueError, ReviewRequired) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"id": movement.id, "added": added}
@@ -116,6 +133,8 @@ def intake_text(account_id: str, payload: TextIntakeCreate) -> TextIntakeRespons
             extracted=result.extracted,
         )
     added = account.add_movement(result.movement, actor="api-user")
+    if added:
+        _store.save(account_id, account)
     return TextIntakeResponse(
         created=added,
         movement_id=result.movement.id if added else None,
@@ -128,10 +147,34 @@ def intake_text(account_id: str, payload: TextIntakeCreate) -> TextIntakeRespons
 @app.post("/accounts/{account_id}/movements/{movement_id}/approve")
 def approve_movement(account_id: str, movement_id: str) -> dict[str, str]:
     try:
-        movement = _account(account_id).approve_movement(movement_id, actor="api-user")
+        account = _account(account_id)
+        movement = account.approve_movement(movement_id, actor="api-user")
+        _store.save(account_id, account)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"id": movement.id, "status": movement.status.value}
+
+
+@app.get("/accounts/{account_id}/movements")
+def list_movements(account_id: str) -> list[dict[str, str]]:
+    return [
+        {
+            "id": movement.id,
+            "operation_date": movement.operation_date.isoformat(),
+            "description": movement.description,
+            "amount": str(movement.amount),
+            "currency": movement.currency,
+            "direction": movement.direction.value,
+            "status": movement.status.value,
+        }
+        for movement in _account(account_id).ordered_movements()
+    ]
+
+
+@app.get("/", response_class=HTMLResponse)
+def user_interface() -> HTMLResponse:
+    html_path = Path(__file__).with_name("static") / "index.html"
+    return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
 
 @app.get("/accounts/{account_id}/balance/{currency}", response_model=BalanceResponse)

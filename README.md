@@ -33,6 +33,9 @@ Para iniciar la API local durante el desarrollo:
 .venv/bin/uvicorn cuentas_corrientes.api:app --reload
 ```
 
+Luego abrir `http://127.0.0.1:8000` para usar la interfaz simple. Las cuentas se
+guardan localmente en `data/cuentas.sqlite3`, que esta excluido de Git.
+
 ## Seguridad
 
 - No guardar claves de API en el repositorio.
