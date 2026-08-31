@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from .domain import Account, Direction, Evidence, Movement, MovementStatus, ReviewRequired
+from .intake import interpret_text
 
 
 app = FastAPI(title="Agente de cuentas corrientes", version="0.1.0")
@@ -41,6 +42,20 @@ class BalanceResponse(BaseModel):
     projected_label: str
     projected_amount: Decimal
     pending_count: int
+
+
+class TextIntakeCreate(BaseModel):
+    text: str = Field(min_length=1)
+    source_reference: str = Field(min_length=1)
+    received_on: date | None = None
+
+
+class TextIntakeResponse(BaseModel):
+    created: bool
+    movement_id: str | None
+    status: str
+    questions: list[str]
+    extracted: dict[str, str]
 
 
 @app.get("/health")
@@ -84,6 +99,41 @@ def add_movement(account_id: str, payload: MovementCreate) -> dict[str, str | bo
     return {"id": movement.id, "added": added}
 
 
+@app.post("/accounts/{account_id}/intake/text", response_model=TextIntakeResponse)
+def intake_text(account_id: str, payload: TextIntakeCreate) -> TextIntakeResponse:
+    account = _account(account_id)
+    result = interpret_text(
+        text=payload.text,
+        source_reference=payload.source_reference,
+        received_on=payload.received_on,
+    )
+    if result.movement is None:
+        return TextIntakeResponse(
+            created=False,
+            movement_id=None,
+            status="needs_clarification",
+            questions=list(result.questions),
+            extracted=result.extracted,
+        )
+    added = account.add_movement(result.movement, actor="api-user")
+    return TextIntakeResponse(
+        created=added,
+        movement_id=result.movement.id if added else None,
+        status="review" if added else "duplicate",
+        questions=list(result.questions),
+        extracted=result.extracted,
+    )
+
+
+@app.post("/accounts/{account_id}/movements/{movement_id}/approve")
+def approve_movement(account_id: str, movement_id: str) -> dict[str, str]:
+    try:
+        movement = _account(account_id).approve_movement(movement_id, actor="api-user")
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"id": movement.id, "status": movement.status.value}
+
+
 @app.get("/accounts/{account_id}/balance/{currency}", response_model=BalanceResponse)
 def get_balance(account_id: str, currency: str) -> BalanceResponse:
     account = _account(account_id)
@@ -97,4 +147,3 @@ def get_balance(account_id: str, currency: str) -> BalanceResponse:
         projected_amount=projected_amount,
         pending_count=sum(1 for movement in account.movements if movement.status is MovementStatus.REVIEW),
     )
-

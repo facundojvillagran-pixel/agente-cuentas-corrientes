@@ -13,6 +13,9 @@ La primera base implementa el motor deterministico que:
 - admite anticipos generales y aplicaciones parciales;
 - calcula fletes sin factura y anticipos de gasoil;
 - conserva auditoria de altas y cambios.
+- recibe texto conversacional ficticio, extrae importe, moneda y fecha;
+- pide aclaraciones cuando no puede determinar una operacion sin inventar datos;
+- crea propuestas proyectadas que requieren aprobacion humana para afectar el saldo confirmado.
 
 La IA documental y la interfaz web se agregaran sobre este motor. La IA interpretara y propondra datos, pero no calculara el saldo oficial.
 

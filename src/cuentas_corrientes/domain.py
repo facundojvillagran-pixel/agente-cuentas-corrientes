@@ -123,6 +123,18 @@ class Account:
         self.audit.append(AuditEvent("movement_added", actor, movement.id))
         return True
 
+    def approve_movement(self, movement_id: str, *, actor: str) -> Movement:
+        for index, movement in enumerate(self.movements):
+            if movement.id != movement_id:
+                continue
+            if movement.status is not MovementStatus.REVIEW:
+                raise ValueError("Only a movement under review can be approved")
+            approved = replace(movement, status=MovementStatus.CONFIRMED)
+            self.movements[index] = approved
+            self.audit.append(AuditEvent("movement_approved", actor, movement_id))
+            return approved
+        raise ValueError("Movement not found")
+
     def add_allocation(self, allocation: Allocation, *, actor: str) -> None:
         by_id = {m.id: m for m in self.movements}
         source = by_id.get(allocation.source_movement_id)
@@ -164,4 +176,3 @@ class Account:
 
     def ordered_movements(self) -> Iterable[Movement]:
         return sorted(self.movements, key=lambda m: (m.operation_date, m.id))
-

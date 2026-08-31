@@ -70,3 +70,46 @@ def test_duplicate_source_is_grouped() -> None:
     assert first.json()["added"] is True
     assert second.json()["added"] is False
 
+
+def test_text_intake_creates_review_then_human_approves() -> None:
+    account_id = client.post("/accounts", json={"company": "A", "counterparty": "B"}).json()["id"]
+    response = client.post(
+        f"/accounts/{account_id}/intake/text",
+        json={
+            "text": "El 20/07/2026 le transferimos $ 700.000 como anticipo general",
+            "source_reference": "chat-ficticio-1",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["created"] is True
+    assert body["status"] == "review"
+    assert body["extracted"] == {
+        "amount": "700000.00",
+        "currency": "ARS",
+        "direction": "company",
+        "operation_date": "2026-07-20",
+    }
+
+    projected = client.get(f"/accounts/{account_id}/balance/ARS").json()
+    assert projected["confirmed_amount"] == "0.00"
+    assert projected["projected_amount"] == "700000.00"
+    assert projected["pending_count"] == 1
+
+    approved = client.post(f"/accounts/{account_id}/movements/{body['movement_id']}/approve")
+    assert approved.status_code == 200
+    confirmed = client.get(f"/accounts/{account_id}/balance/ARS").json()
+    assert confirmed["confirmed_amount"] == "700000.00"
+    assert confirmed["pending_count"] == 0
+
+
+def test_text_intake_asks_instead_of_guessing_direction() -> None:
+    account_id = client.post("/accounts", json={"company": "A", "counterparty": "B"}).json()["id"]
+    response = client.post(
+        f"/accounts/{account_id}/intake/text",
+        json={"text": "Transferencia de $ 250.000", "source_reference": "chat-ficticio-2"},
+    )
+    assert response.status_code == 200
+    assert response.json()["created"] is False
+    assert response.json()["status"] == "needs_clarification"
+    assert response.json()["questions"] == ["¿Quién entregó el dinero o valor: la empresa o la contraparte?"]
