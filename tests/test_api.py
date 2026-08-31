@@ -113,3 +113,21 @@ def test_text_intake_asks_instead_of_guessing_direction() -> None:
     assert response.json()["created"] is False
     assert response.json()["status"] == "needs_clarification"
     assert response.json()["questions"] == ["¿Quién entregó el dinero o valor: la empresa o la contraparte?"]
+
+
+def test_pending_movement_can_be_discarded_without_affecting_balance() -> None:
+    account_id = client.post("/accounts", json={"company": "A", "counterparty": "B"}).json()["id"]
+    intake = client.post(
+        f"/accounts/{account_id}/intake/text",
+        json={"text": "Le pagamos $ 100.000", "source_reference": "prueba-descartar"},
+    ).json()
+    response = client.post(
+        f"/accounts/{account_id}/movements/{intake['movement_id']}/discard",
+        json={"reason": "No corresponde a esta cuenta"},
+    )
+    assert response.status_code == 200
+    assert response.json()["status"] == "discarded"
+    balance = client.get(f"/accounts/{account_id}/balance/ARS").json()
+    assert balance["confirmed_amount"] == "0.00"
+    assert balance["projected_amount"] == "0.00"
+    assert balance["pending_count"] == 0

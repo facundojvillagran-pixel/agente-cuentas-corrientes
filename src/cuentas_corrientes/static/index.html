@@ -15,6 +15,8 @@
     input, select, textarea { border: 1px solid #bac8bf; padding: 10px; } textarea { min-height: 150px; resize: vertical; }
     button { margin-top: 12px; padding: 11px; border: 0; background: #176b3a; color: white; font-weight: 700; cursor: pointer; }
     button.secondary { background: #e9f1ec; color: #174c2d; }
+    button.danger { background: #fff0ee; color: #9b2d20; border: 1px solid #e8b8b1; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .balance { font-size: 1.35rem; font-weight: 750; } .warning { color: #955500; }
     .movement { border-top: 1px solid #e2e8e4; padding: 10px 0; } .movement small { color: #66736b; }
     #message { white-space: pre-wrap; padding-top: 10px; }
@@ -80,13 +82,19 @@ async function approve(id) {
   await request(`/accounts/${accounts.value}/movements/${id}/approve`, {method:'POST'});
   show('Movimiento aprobado y saldo actualizado.'); await refresh();
 }
+async function discard(id) {
+  const reason = window.prompt('¿Por qué querés denegar este movimiento?', 'No corresponde');
+  if (!reason || !reason.trim()) return;
+  await request(`/accounts/${accounts.value}/movements/${id}/discard`, {method:'POST', body:JSON.stringify({reason})});
+  show('Movimiento denegado. Quedó guardado como descartado y no afecta los saldos.'); await refresh();
+}
 async function refresh() {
   if (!accounts.value) { document.querySelector('#balance').textContent='Elegí una cuenta'; document.querySelector('#movements').innerHTML=''; return; }
   const currency = document.querySelector('#currency').value;
   const [balance, movements] = await Promise.all([request(`/accounts/${accounts.value}/balance/${currency}`), request(`/accounts/${accounts.value}/movements`)]);
   document.querySelector('#balance').textContent = `${balance.confirmed_label}: ${balance.confirmed_amount} ${currency}`;
   document.querySelector('#pending').textContent = balance.pending_count ? `Proyectado: ${balance.projected_amount} ${currency} · ${balance.pending_count} pendiente(s)` : 'Sin movimientos pendientes';
-  document.querySelector('#movements').innerHTML = movements.filter(m => m.currency===currency).map(m => `<div class="movement"><b>${m.operation_date} · ${m.amount} ${m.currency}</b><br>${m.description}<br><small>${m.status==='review'?'Pendiente de aprobación':m.status}</small>${m.status==='review'?`<button class="secondary" onclick="approve('${m.id}')">Aprobar movimiento</button>`:''}</div>`).join('') || 'Sin movimientos.';
+  document.querySelector('#movements').innerHTML = movements.filter(m => m.currency===currency).map(m => `<div class="movement"><b>${m.operation_date} · ${m.amount} ${m.currency}</b><br>${m.description}<br><small>${m.status==='review'?'Pendiente de aprobación':m.status==='confirmed'?'Confirmado':'Descartado'}</small>${m.status==='review'?`<div class="actions"><button class="secondary" onclick="approve('${m.id}')">Aprobar</button><button class="danger" onclick="discard('${m.id}')">Denegar</button></div>`:''}</div>`).join('') || 'Sin movimientos.';
 }
 function show(text) { document.querySelector('#message').textContent=text; }
 loadAccounts();

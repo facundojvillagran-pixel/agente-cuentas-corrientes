@@ -135,6 +135,20 @@ class Account:
             return approved
         raise ValueError("Movement not found")
 
+    def discard_movement(self, movement_id: str, *, actor: str, reason: str) -> Movement:
+        if not reason.strip():
+            raise ValueError("A discard reason is required")
+        for index, movement in enumerate(self.movements):
+            if movement.id != movement_id:
+                continue
+            if movement.status is not MovementStatus.REVIEW:
+                raise ValueError("Only a movement under review can be discarded")
+            discarded = replace(movement, status=MovementStatus.DISCARDED)
+            self.movements[index] = discarded
+            self.audit.append(AuditEvent("movement_discarded", actor, movement_id, detail=reason.strip()))
+            return discarded
+        raise ValueError("Movement not found")
+
     def add_allocation(self, allocation: Allocation, *, actor: str) -> None:
         by_id = {m.id: m for m in self.movements}
         source = by_id.get(allocation.source_movement_id)

@@ -64,6 +64,10 @@ class TextIntakeResponse(BaseModel):
     extracted: dict[str, str]
 
 
+class DiscardMovement(BaseModel):
+    reason: str = Field(min_length=1)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -149,6 +153,17 @@ def approve_movement(account_id: str, movement_id: str) -> dict[str, str]:
     try:
         account = _account(account_id)
         movement = account.approve_movement(movement_id, actor="api-user")
+        _store.save(account_id, account)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"id": movement.id, "status": movement.status.value}
+
+
+@app.post("/accounts/{account_id}/movements/{movement_id}/discard")
+def discard_movement(account_id: str, movement_id: str, payload: DiscardMovement) -> dict[str, str]:
+    try:
+        account = _account(account_id)
+        movement = account.discard_movement(movement_id, actor="api-user", reason=payload.reason)
         _store.save(account_id, account)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
