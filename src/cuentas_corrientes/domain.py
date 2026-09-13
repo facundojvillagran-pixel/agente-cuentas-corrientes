@@ -52,6 +52,8 @@ class Movement:
     external_reference: str | None = None
     subaccount: str = "general"
     unassigned_amount: Decimal = Decimal("0.00")
+    reversal_of: str | None = None
+    is_opening_balance: bool = False
     id: str = field(default_factory=lambda: str(uuid4()))
     version: int = 1
 
@@ -123,6 +125,9 @@ class Account:
         self.audit.append(AuditEvent("movement_added", actor, movement.id))
         return True
 
+    def has_source_hash(self, source_hash: str) -> bool:
+        return source_hash in self._source_hashes
+
     def approve_movement(self, movement_id: str, *, actor: str) -> Movement:
         for index, movement in enumerate(self.movements):
             if movement.id != movement_id:
@@ -148,6 +153,64 @@ class Account:
             self.audit.append(AuditEvent("movement_discarded", actor, movement_id, detail=reason.strip()))
             return discarded
         raise ValueError("Movement not found")
+
+    _CORRECTABLE_FIELDS = frozenset(
+        {
+            "description",
+            "amount",
+            "currency",
+            "direction",
+            "operation_date",
+            "external_reference",
+            "unassigned_amount",
+        }
+    )
+
+    def correct_movement(self, movement_id: str, *, actor: str, reason: str, **changes: object) -> Movement:
+        if not reason.strip():
+            raise ValueError("A correction reason is required")
+        unknown = set(changes) - self._CORRECTABLE_FIELDS
+        if unknown:
+            raise ValueError(f"Cannot correct fields: {', '.join(sorted(unknown))}")
+        for index, movement in enumerate(self.movements):
+            if movement.id != movement_id:
+                continue
+            if movement.status is not MovementStatus.REVIEW:
+                raise ValueError("Only a movement under review can be corrected")
+            corrected = replace(movement, **changes, version=movement.version + 1)
+            self.movements[index] = corrected
+            detail = f"{reason.strip()} ({', '.join(sorted(changes)) or 'sin cambios'})"
+            self.audit.append(AuditEvent("movement_corrected", actor, movement_id, detail=detail))
+            return corrected
+        raise ValueError("Movement not found")
+
+    def reverse_movement(self, movement_id: str, *, actor: str, reason: str) -> Movement:
+        if not reason.strip():
+            raise ValueError("A reversal reason is required")
+        by_id = {m.id: m for m in self.movements}
+        original = by_id.get(movement_id)
+        if not original:
+            raise ValueError("Movement not found")
+        if original.status is not MovementStatus.CONFIRMED:
+            raise ValueError("Only a confirmed movement can be reversed")
+        if original.direction is Direction.INFORMATIONAL:
+            raise ValueError("An informational movement cannot be reversed")
+        if any(m.reversal_of == movement_id for m in self.movements):
+            raise ValueError("This movement was already reversed")
+        opposite = Direction.COUNTERPARTY if original.direction is Direction.COMPANY else Direction.COMPANY
+        counter = Movement(
+            operation_date=date.today(),
+            description=f"Reversión: {original.description}"[:180],
+            amount=original.amount,
+            currency=original.currency,
+            direction=opposite,
+            status=MovementStatus.CONFIRMED,
+            evidence=(Evidence("reversal", reason.strip()),),
+            reversal_of=original.id,
+        )
+        self.movements.append(counter)
+        self.audit.append(AuditEvent("movement_reversed", actor, counter.id, detail=f"{movement_id}: {reason.strip()}"))
+        return counter
 
     def add_allocation(self, allocation: Allocation, *, actor: str) -> None:
         by_id = {m.id: m for m in self.movements}
@@ -187,6 +250,14 @@ class Account:
 
     def unassigned_total(self, currency: str) -> Decimal:
         return _money(sum((m.unassigned_amount for m in self.movements if m.currency == currency.upper() and m.status is MovementStatus.CONFIRMED), Decimal("0")))
+
+    def opening_balances(self) -> dict[str, Decimal]:
+        result: dict[str, Decimal] = {}
+        for movement in self.movements:
+            if not movement.is_opening_balance or movement.status is not MovementStatus.CONFIRMED:
+                continue
+            result[movement.currency] = result.get(movement.currency, Decimal("0.00")) + movement.signed_amount
+        return {currency: _money(amount) for currency, amount in sorted(result.items())}
 
     def ordered_movements(self) -> Iterable[Movement]:
         return sorted(self.movements, key=lambda m: (m.operation_date, m.id))

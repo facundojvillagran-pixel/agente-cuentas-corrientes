@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cuentas-corrientes",
+      "runtimeExecutable": ".venv/bin/uvicorn",
+      "runtimeArgs": ["cuentas_corrientes.api:app", "--host", "127.0.0.1", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}

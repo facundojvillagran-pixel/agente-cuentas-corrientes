@@ -1,0 +1,26 @@
+{
+  "created": true,
+  "status": "review",
+  "extracted": {
+    "amount": "1500.00",
+    "currency": "USD",
+    "direction": "counterparty",
+    "operation_date": "2026-07-22",
+    "external_reference": "FC 000123"
+  },
+  "questions": [],
+  "human_review_required": true,
+  "proposal": {
+    "operation_date": "2026-07-22",
+    "description": "El 22/07/2026 recibimos de Transporte Sur USD 1.500 por la FC 000123",
+    "amount": "1500.00",
+    "currency": "USD",
+    "direction": "counterparty",
+    "external_reference": "FC 000123",
+    "unassigned_amount": "0.00",
+    "evidence": {
+      "kind": "conversation",
+      "reference": "mensaje-administracion-anonimizado-03"
+    }
+  }
+}

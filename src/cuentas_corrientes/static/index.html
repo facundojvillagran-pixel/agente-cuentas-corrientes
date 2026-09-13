@@ -6,97 +6,1154 @@
   <title>Agente de cuentas corrientes</title>
   <style>
     :root { font-family: system-ui, sans-serif; color: #18221c; background: #f4f7f5; }
-    body { max-width: 980px; margin: 0 auto; padding: 24px; }
-    h1 { margin-bottom: 4px; } .hint { color: #5c6b61; margin-top: 0; }
-    .grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 18px; }
-    .card { background: white; border: 1px solid #dce5df; border-radius: 14px; padding: 18px; box-shadow: 0 4px 14px #1738230b; }
-    label { display: block; font-weight: 650; margin: 12px 0 5px; }
-    input, select, textarea, button { width: 100%; box-sizing: border-box; font: inherit; border-radius: 9px; }
-    input, select, textarea { border: 1px solid #bac8bf; padding: 10px; } textarea { min-height: 150px; resize: vertical; }
-    button { margin-top: 12px; padding: 11px; border: 0; background: #176b3a; color: white; font-weight: 700; cursor: pointer; }
+    * { box-sizing: border-box; }
+    body { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { margin-bottom: 4px; } h2 { font-size: 1.05rem; margin: 0 0 10px; }
+    .hint { color: #5c6b61; margin-top: 0; }
+    .grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 18px; align-items: start; }
+    .card { background: white; border: 1px solid #dce5df; border-radius: 14px; padding: 18px; box-shadow: 0 4px 14px #1738230b; margin-bottom: 18px; }
+    .card.primary { border: 2px solid #176b3a; }
+    label { display: block; font-weight: 650; margin: 12px 0 5px; font-size: 0.92rem; }
+    input, select, textarea, button { width: 100%; font: inherit; border-radius: 9px; }
+    input, select, textarea { border: 1px solid #bac8bf; padding: 9px 10px; } textarea { min-height: 100px; resize: vertical; }
+    button { margin-top: 12px; padding: 10px; border: 0; background: #176b3a; color: white; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: progress; }
     button.secondary { background: #e9f1ec; color: #174c2d; }
     button.danger { background: #fff0ee; color: #9b2d20; border: 1px solid #e8b8b1; }
-    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .balance { font-size: 1.35rem; font-weight: 750; } .warning { color: #955500; }
-    .movement { border-top: 1px solid #e2e8e4; padding: 10px 0; } .movement small { color: #66736b; }
-    #message { white-space: pre-wrap; padding-top: 10px; }
-    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+    button.link { background: none; color: #176b3a; text-decoration: underline; padding: 4px 0; width: auto; margin-top: 4px; font-weight: 600; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .summary-item { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #eef2ef; }
+    .summary-item:last-child { border-bottom: none; }
+    .summary-label { color: #445048; } .summary-value { font-weight: 700; } .summary-value.big { font-size: 1.2rem; }
+    .banner { padding: 10px 12px; border-radius: 9px; margin-top: 10px; white-space: pre-wrap; font-size: 0.92rem; }
+    .banner.error { background: #fdeceb; color: #8a271c; border: 1px solid #f3c3bc; }
+    .banner.ok { background: #eaf6ee; color: #175a33; border: 1px solid #bfe3cc; }
+    .banner.info { background: #eef4f8; color: #2b4a5e; border: 1px solid #c9dbe6; }
+    .step-banner { display: inline-block; font-weight: 700; font-size: 0.85rem; padding: 4px 12px; border-radius: 999px; background: #eef4f8; color: #2b4a5e; margin-bottom: 10px; }
+    .movement { border-top: 1px solid #e2e8e4; padding: 12px 0; }
+    .movement small { color: #66736b; }
+    .tag { display: inline-block; font-size: 0.78rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; }
+    .tag.review { background: #fff3d6; color: #8a5a00; }
+    .tag.confirmed { background: #e3f3e8; color: #176b3a; }
+    .tag.discarded { background: #f1f1f1; color: #666; }
+    .tag.reversed { background: #f0e6fb; color: #5b2d91; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .reason-box { display: none; margin-top: 8px; padding: 10px; background: #f7f9f8; border-radius: 9px; }
+    .reason-box.open { display: block; }
+    .proposal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .proposal-fields .full { grid-column: 1 / -1; }
+    fieldset { border: 0; padding: 0; margin: 0; }
+    fieldset:disabled { opacity: 0.65; }
+    .drop-zone { border: 2px dashed #9db7a7; border-radius: 14px; padding: 28px 16px; text-align: center; color: #395247; background: #f2f8f4; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .drop-zone.dragover { background: #e2f2e8; border-color: #176b3a; }
+    .drop-zone input[type=file] { display: none; }
+    .upload-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #eef2ef; font-size: 0.9rem; }
+    .upload-row .name { flex: 1; word-break: break-word; }
+    .upload-row .state { white-space: nowrap; color: #5c6b61; }
+    .upload-row button { width: auto; margin-top: 0; padding: 5px 10px; font-size: 0.82rem; }
+    table.preview-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 0.82rem; overflow-x: auto; display: block; }
+    table.preview-table td { border: 1px solid #dfe6e1; padding: 4px 6px; white-space: nowrap; }
+    .logo-preview { max-width: 160px; max-height: 80px; display: block; margin: 8px 0; border: 1px solid #dce5df; border-radius: 8px; padding: 4px; background: white; }
+    .download-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    details.secondary-intake { margin-top: 16px; }
+    details.secondary-intake summary { cursor: pointer; font-weight: 650; color: #174c2d; }
+    details.advanced { margin-top: 6px; }
+    details.advanced > summary { cursor: pointer; font-weight: 650; color: #445048; padding: 4px 0; }
+    .checklist-item { display: flex; gap: 8px; align-items: center; font-weight: 400; margin: 4px 0; }
+    @media (max-width: 760px) { .grid, .row, .row3, .proposal-fields, .download-actions { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <h1>Agente de cuentas corrientes</h1>
-  <p class="hint">Cargá información, revisá lo interpretado y aprobá solo cuando sea correcto.</p>
-  <div class="grid">
+  <p class="hint">Elegí la cuenta, cargá todos tus documentos y confirmá la cuenta corriente con una sola acción.</p>
+
+  <section class="card">
+    <h2>1. Cuenta</h2>
+    <label for="accounts">Elegir cuenta</label>
+    <select id="accounts"></select>
+    <fieldset id="newAccountFields">
+      <label for="company">Empresa</label>
+      <input id="company" placeholder="Ej.: Empresa Fields SRL">
+      <label for="counterparty">Cliente, proveedor o contraparte</label>
+      <input id="counterparty" placeholder="Ej.: Transporte de prueba">
+      <label>¿Tiene saldo inicial? (opcional)</label>
+      <div class="row3">
+        <input id="openingAmount" placeholder="Importe" inputmode="decimal">
+        <select id="openingCurrency"><option value="ARS">ARS</option><option value="USD">USD</option></select>
+        <select id="openingFavor">
+          <option value="">A favor de…</option>
+          <option value="empresa">Empresa</option>
+          <option value="contraparte">Contraparte</option>
+        </select>
+      </div>
+      <input id="openingReference" placeholder="Referencia del saldo inicial (opcional)">
+      <button class="secondary" id="createAccountBtn">Crear cuenta nueva</button>
+    </fieldset>
+    <div id="accountFormMsg"></div>
+  </section>
+
+  <section class="card primary">
+    <h2>2. Preparar cuenta corriente</h2>
+    <div id="batchArea">Elegí una cuenta para empezar.</div>
+  </section>
+
+  <details class="advanced">
+    <summary>Modo avanzado: cargar y revisar documentos uno por uno</summary>
+
     <section class="card">
-      <h2>1. Elegir cuenta</h2>
-      <select id="accounts"></select>
-      <label>Empresa</label><input id="company" placeholder="Ej.: Empresa Fields SRL">
-      <label>Cliente, proveedor o contraparte</label><input id="counterparty" placeholder="Ej.: Transporte de prueba">
-      <button class="secondary" onclick="createAccount()">Crear cuenta nueva</button>
-      <h2>2. Pegar información</h2>
-      <textarea id="text" placeholder="Ejemplo ficticio: El 20/07/2026 le transferimos $ 700.000 como anticipo general"></textarea>
-      <label>Referencia de origen</label><input id="reference" placeholder="Ej.: conversación ficticia 20-07">
-      <button onclick="processText()">Analizar</button>
-      <div id="message"></div>
+      <h2>Cargar y revisar documentación individualmente</h2>
+      <fieldset id="uploadFields" disabled>
+        <div class="drop-zone" id="dropZone">
+          <strong>Arrastrá acá tus archivos</strong>
+          <p class="hint">o hacé clic para elegirlos — .xlsx, .pdf, .png, .jpg (podés cargar varios juntos)</p>
+          <input type="file" id="fileInput" multiple accept=".xlsx,.pdf,.png,.jpg,.jpeg">
+        </div>
+        <div id="uploadList"></div>
+        <div id="uploadMsg"></div>
+
+        <details class="secondary-intake">
+          <summary>O pegá un texto en vez de un archivo</summary>
+          <label for="text">Texto (mensaje, resumen, etc.)</label>
+          <textarea id="text" placeholder="Ejemplo ficticio: El 20/07/2026 le transferimos $ 700.000 como anticipo general"></textarea>
+          <label for="reference">Referencia de origen</label>
+          <input id="reference" placeholder="Ej.: conversación ficticia 20-07">
+          <button id="analyzeBtn">Analizar texto</button>
+          <div id="intakeMsg"></div>
+        </details>
+
+        <h2 style="margin-top:20px">Para revisar</h2>
+        <p class="hint">Corregí lo dudoso, aprobá o denegá. Lo que ya está claro se puede aprobar directo.</p>
+        <button class="secondary" id="approveAllBtn">Aprobar todas las propuestas válidas</button>
+        <div id="reviewArea"></div>
+      </fieldset>
     </section>
+
     <section class="card">
-      <h2>Resumen</h2>
-      <label>Moneda</label><select id="currency" onchange="refresh()"><option>ARS</option><option>USD</option></select>
-      <div id="balance" class="balance">Elegí una cuenta</div>
-      <div id="pending" class="warning"></div>
-      <h2>Movimientos</h2>
-      <div id="movements"></div>
+      <h2>Resultado y descarga</h2>
+      <fieldset id="resultFields" disabled>
+        <label for="currency">Moneda</label>
+        <select id="currency"><option>ARS</option><option>USD</option></select>
+        <div id="summary"></div>
+
+        <h2 style="margin-top:18px">Configuración del informe</h2>
+        <label for="displayName">Nombre comercial a mostrar</label>
+        <input id="displayName" placeholder="Ej.: Agro Norte SA">
+        <label for="logoInput">Logotipo (PNG o JPG, opcional)</label>
+        <input type="file" id="logoInput" accept=".png,.jpg,.jpeg">
+        <img id="logoPreview" class="logo-preview" style="display:none">
+        <div class="actions">
+          <button class="secondary" id="saveConfigBtn">Guardar configuración</button>
+          <button class="danger" id="removeLogoBtn">Quitar logo</button>
+        </div>
+        <div id="configMsg"></div>
+
+        <h2 style="margin-top:18px">Descargar</h2>
+        <div class="download-actions">
+          <button id="downloadExcelBtn">Descargar Excel</button>
+          <button id="downloadPdfBtn">Descargar PDF</button>
+        </div>
+
+        <h2 style="margin-top:18px">Movimientos</h2>
+        <div id="movements">Elegí una cuenta para ver sus movimientos.</div>
+      </fieldset>
     </section>
-  </div>
+  </details>
+
 <script>
-const accounts = document.querySelector('#accounts');
-accounts.onchange = refresh;
-async function request(url, options={}) {
-  const response = await fetch(url, {headers:{'Content-Type':'application/json'}, ...options});
-  if (!response.ok) throw new Error((await response.json()).detail || 'No se pudo completar la operación');
-  return response.json();
+'use strict';
+
+const state = { accountId: null };
+let uploadQueue = [];
+let currentBatch = null;
+let stagedFiles = [];
+
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === 'class') node.className = value;
+    else if (key === 'text') node.textContent = value;
+    else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2), value);
+    else if (value !== undefined && value !== null) node.setAttribute(key, value);
+  }
+  for (const child of [].concat(children)) {
+    if (child === null || child === undefined) continue;
+    node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+  }
+  return node;
 }
+
+function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+function banner(node, text, kind) {
+  clear(node);
+  if (!text) return;
+  node.appendChild(el('div', { class: `banner ${kind}` , text }));
+}
+
+function fieldRow(labelText, inputEl) {
+  return el('div', {}, [el('label', { text: labelText }), inputEl]);
+}
+
+async function request(url, options = {}) {
+  let response;
+  try {
+    response = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+  } catch (networkError) {
+    throw new Error('La aplicación local se desconectó. Volvé a iniciarla y reintentá.');
+  }
+  let body = null;
+  try {
+    body = await response.json();
+  } catch (parseError) {
+    if (!response.ok) throw new Error('El servidor respondió con un error inesperado.');
+  }
+  if (!response.ok) {
+    throw new Error((body && body.detail) || 'No se pudo completar la operación.');
+  }
+  return body;
+}
+
+async function withButton(button, fn) {
+  const originalDisabled = button.disabled;
+  button.disabled = true;
+  try {
+    await fn();
+  } finally {
+    button.disabled = originalDisabled;
+  }
+}
+
+const els = {
+  accounts: document.querySelector('#accounts'),
+  accountFormMsg: document.querySelector('#accountFormMsg'),
+  uploadFields: document.querySelector('#uploadFields'),
+  resultFields: document.querySelector('#resultFields'),
+  uploadMsg: document.querySelector('#uploadMsg'),
+  uploadList: document.querySelector('#uploadList'),
+  intakeMsg: document.querySelector('#intakeMsg'),
+  reviewArea: document.querySelector('#reviewArea'),
+  currency: document.querySelector('#currency'),
+  summary: document.querySelector('#summary'),
+  movements: document.querySelector('#movements'),
+  configMsg: document.querySelector('#configMsg'),
+  logoPreview: document.querySelector('#logoPreview'),
+  batchArea: document.querySelector('#batchArea'),
+};
+
+els.accounts.addEventListener('change', async () => {
+  state.accountId = els.accounts.value || null;
+  const enabled = !!state.accountId;
+  els.uploadFields.disabled = !enabled;
+  els.resultFields.disabled = !enabled;
+  uploadQueue = [];
+  renderUploadList();
+  currentBatch = null;
+  stagedFiles = [];
+  await Promise.all([refresh(), loadExistingBatch()]);
+});
+els.currency.addEventListener('change', refresh);
+
+document.querySelector('#createAccountBtn').addEventListener('click', (e) => withButton(e.currentTarget, createAccount));
+document.querySelector('#analyzeBtn').addEventListener('click', (e) => withButton(e.currentTarget, processText));
+document.querySelector('#approveAllBtn').addEventListener('click', (e) => withButton(e.currentTarget, approveAllValid));
+document.querySelector('#saveConfigBtn').addEventListener('click', (e) => withButton(e.currentTarget, saveConfig));
+document.querySelector('#removeLogoBtn').addEventListener('click', (e) => withButton(e.currentTarget, removeLogo));
+document.querySelector('#downloadExcelBtn').addEventListener('click', (e) => withButton(e.currentTarget, () => downloadExport('xlsx')));
+document.querySelector('#downloadPdfBtn').addEventListener('click', (e) => withButton(e.currentTarget, () => downloadExport('pdf')));
+
+/* ---------- Flujo principal: lote con confirmación única ---------- */
+
+async function loadExistingBatch() {
+  if (!state.accountId) return;
+  try {
+    // Most recent batch first (list is sorted newest-first by the API).
+    // We resume it whether it's still in progress or already confirmed,
+    // so a page reload never loses an in-progress batch, and a just-confirmed
+    // one still shows its "cuenta lista" screen instead of silently reverting
+    // to a blank upload screen.
+    const list = await request(`/accounts/${state.accountId}/batches`);
+    if (list.length) {
+      currentBatch = await request(`/accounts/${state.accountId}/batches/${list[0].id}`);
+    }
+  } catch (error) {
+    // sin lote previo o error de red — se muestra la pantalla inicial igual
+  }
+  renderBatchArea();
+}
+
+function stepLabel() {
+  if (!currentBatch) return null;
+  if (currentBatch.status === 'confirmed') return 'Cuenta generada';
+  if (currentBatch.status === 'needs_questions') return 'Necesitamos algunos datos';
+  return 'Listo para confirmar';
+}
+
+function renderBatchArea() {
+  clear(els.batchArea);
+  if (!state.accountId) {
+    els.batchArea.appendChild(el('p', { class: 'hint', text: 'Elegí una cuenta para empezar.' }));
+    return;
+  }
+  const label = stepLabel();
+  if (label) els.batchArea.appendChild(el('div', { class: 'step-banner', text: label }));
+
+  if (!currentBatch) return renderIdleState();
+  if (currentBatch.status === 'confirmed') return renderDoneState();
+  const unanswered = currentBatch.questions.filter((q) => !q.answered);
+  if (unanswered.length) return renderQuestionsState(unanswered);
+  return renderSummaryState();
+}
+
+function renderIdleState() {
+  const zone = el('div', { class: 'drop-zone' }, [
+    el('strong', { text: 'Arrastrá todos tus archivos acá' }),
+    el('p', { class: 'hint', text: 'o hacé clic para elegirlos — .xlsx, .pdf, .png, .jpg' }),
+  ]);
+  const input = el('input', { type: 'file', multiple: true, accept: '.xlsx,.pdf,.png,.jpg,.jpeg', style: 'display:none' });
+  zone.appendChild(input);
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', (e) => { e.preventDefault(); zone.classList.remove('dragover'); addStagedFiles(e.dataTransfer.files); });
+  input.addEventListener('change', () => { addStagedFiles(input.files); input.value = ''; });
+  els.batchArea.appendChild(zone);
+
+  const list = el('div');
+  for (const file of stagedFiles) {
+    const removeBtn = el('button', { class: 'secondary', text: 'Quitar' });
+    removeBtn.addEventListener('click', () => { stagedFiles = stagedFiles.filter((f) => f !== file); renderBatchArea(); });
+    list.appendChild(el('div', { class: 'upload-row' }, [el('span', { class: 'name', text: file.name }), removeBtn]));
+  }
+  els.batchArea.appendChild(list);
+
+  const prepareBtn = el('button', { text: stagedFiles.length ? `Preparar cuenta corriente (${stagedFiles.length} archivo(s))` : 'Preparar cuenta corriente' });
+  prepareBtn.disabled = stagedFiles.length === 0;
+  prepareBtn.addEventListener('click', () => withButton(prepareBtn, prepareBatch));
+  els.batchArea.appendChild(prepareBtn);
+  els.batchArea.appendChild(el('div', { id: 'batchMsg' }));
+}
+
+function addStagedFiles(fileList) {
+  for (const file of Array.from(fileList)) stagedFiles.push(file);
+  renderBatchArea();
+}
+
+async function prepareBatch() {
+  const msg = els.batchArea.querySelector('#batchMsg') || els.batchArea;
+  const form = new FormData();
+  for (const file of stagedFiles) form.append('files', file, file.name);
+  let response;
+  try {
+    response = await fetch(`/accounts/${state.accountId}/batches`, { method: 'POST', body: form });
+  } catch (networkError) {
+    return banner(msg, 'La aplicación local se desconectó. Volvé a iniciarla y reintentá.', 'error');
+  }
+  let body = null;
+  try { body = await response.json(); } catch (e) { /* sin cuerpo */ }
+  if (!response.ok) return banner(msg, (body && body.detail) || 'No pudimos leer estos archivos.', 'error');
+  currentBatch = body;
+  stagedFiles = [];
+  renderBatchArea();
+}
+
+function affectedItemsFor(question) {
+  const byId = new Map(currentBatch.line_items.map((i) => [i.id, i]));
+  return question.affected_line_item_ids.map((id) => byId.get(id)).filter(Boolean);
+}
+
+function renderQuestionsState(unanswered) {
+  els.batchArea.appendChild(el('p', { class: 'hint', text: `${unanswered.length} pregunta(s) para resolver antes de continuar. Cada una se responde una sola vez.` }));
+  for (const question of unanswered) els.batchArea.appendChild(renderQuestionCard(question));
+}
+
+function renderQuestionCard(question) {
+  const container = el('div', { class: 'movement' });
+  container.appendChild(el('b', { text: question.prompt }));
+  const msgBox = el('div');
+
+  const scopeSelect = el('select', {}, [
+    el('option', { value: 'all', text: 'Aplicar a todo el lote' }),
+    el('option', { value: 'period', text: 'Aplicar a un período' }),
+    el('option', { value: 'selection', text: 'Aplicar a una selección de movimientos' }),
+  ]);
+
+  const periodStart = el('input', { type: 'date' });
+  const periodEnd = el('input', { type: 'date' });
+  const periodBox = el('div', { class: 'row', style: 'display:none' }, [fieldRow('Desde', periodStart), fieldRow('Hasta', periodEnd)]);
+
+  const affected = affectedItemsFor(question);
+  const checkboxes = [];
+  const selectionBox = el('div', { style: 'display:none' });
+  for (const item of affected.slice(0, 40)) {
+    const cb = el('input', { type: 'checkbox' });
+    cb.value = item.id;
+    checkboxes.push(cb);
+    const description = item.fields.description || item.source_reference;
+    selectionBox.appendChild(el('label', { class: 'checklist-item' }, [cb, document.createTextNode(`${item.fields.operation_date || ''} · ${description}`)]));
+  }
+  if (affected.length > 40) selectionBox.appendChild(el('p', { class: 'hint', text: `… y ${affected.length - 40} más.` }));
+
+  scopeSelect.addEventListener('change', () => {
+    periodBox.style.display = scopeSelect.value === 'period' ? 'grid' : 'none';
+    selectionBox.style.display = scopeSelect.value === 'selection' ? 'block' : 'none';
+  });
+
+  container.appendChild(fieldRow('Alcance de esta respuesta', scopeSelect));
+  container.appendChild(periodBox);
+  container.appendChild(selectionBox);
+
+  const answerFields = el('div', { class: 'proposal-fields' });
+  const inputs = {};
+  if (question.kind === 'fuel_price') {
+    inputs.price = el('input', { inputmode: 'decimal', placeholder: 'Ej.: 1250' });
+    inputs.currency = el('select', {}, [el('option', { value: 'ARS', text: 'ARS' }), el('option', { value: 'USD', text: 'USD' })]);
+    inputs.evidence = el('input', { placeholder: 'Ej.: última factura de gasoil pagada por la empresa' });
+    answerFields.appendChild(fieldRow('Precio por litro', inputs.price));
+    answerFields.appendChild(fieldRow('Moneda', inputs.currency));
+    answerFields.appendChild(el('div', { class: 'full' }, [el('label', { text: 'Evidencia o referencia del precio' }), inputs.evidence]));
+  } else if (question.kind === 'missing_currency') {
+    inputs.currency_answer = el('select', {}, [el('option', { value: 'ARS', text: 'ARS' }), el('option', { value: 'USD', text: 'USD' })]);
+    answerFields.appendChild(fieldRow('Moneda', inputs.currency_answer));
+  } else if (question.kind === 'missing_date') {
+    inputs.date_answer = el('input', { type: 'date' });
+    answerFields.appendChild(fieldRow('Fecha', inputs.date_answer));
+  } else if (question.kind === 'possible_duplicates') {
+    inputs.duplicate_action = el('select', {}, [
+      el('option', { value: 'exclude', text: 'Excluirlos (recomendado)' }),
+      el('option', { value: 'include', text: 'Incluirlos de todos modos' }),
+    ]);
+    answerFields.appendChild(fieldRow('¿Qué hacemos con estos posibles duplicados?', inputs.duplicate_action));
+  }
+  container.appendChild(answerFields);
+
+  const submitBtn = el('button', { text: 'Responder' });
+  submitBtn.addEventListener('click', () => withButton(submitBtn, async () => {
+    const payload = { scope: scopeSelect.value };
+    if (scopeSelect.value === 'period') {
+      if (!periodStart.value || !periodEnd.value) return banner(msgBox, 'Indicá el período (desde/hasta).', 'error');
+      payload.period_start = periodStart.value;
+      payload.period_end = periodEnd.value;
+    } else if (scopeSelect.value === 'selection') {
+      const selected = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
+      if (!selected.length) return banner(msgBox, 'Elegí al menos un movimiento.', 'error');
+      payload.selection_ids = selected;
+    }
+    if (question.kind === 'fuel_price') {
+      if (!inputs.price.value || !inputs.currency.value) return banner(msgBox, 'Completá el precio por litro y la moneda.', 'error');
+      payload.price = inputs.price.value;
+      payload.currency = inputs.currency.value;
+      if (inputs.evidence.value.trim()) payload.evidence_reference = inputs.evidence.value.trim();
+    } else if (question.kind === 'missing_currency') {
+      payload.currency_answer = inputs.currency_answer.value;
+    } else if (question.kind === 'missing_date') {
+      if (!inputs.date_answer.value) return banner(msgBox, 'Indicá la fecha.', 'error');
+      payload.date_answer = inputs.date_answer.value;
+    } else if (question.kind === 'possible_duplicates') {
+      payload.duplicate_action = inputs.duplicate_action.value;
+    }
+    try {
+      currentBatch = await request(`/accounts/${state.accountId}/batches/${currentBatch.id}/questions/${question.id}/answer`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      renderBatchArea();
+    } catch (error) {
+      banner(msgBox, error.message, 'error');
+    }
+  }));
+  container.appendChild(submitBtn);
+  container.appendChild(msgBox);
+  return container;
+}
+
+function summaryRow(label, value, big) {
+  return el('div', { class: 'summary-item' }, [
+    el('span', { class: 'summary-label', text: label }),
+    el('span', { class: `summary-value${big ? ' big' : ''}`, text: value }),
+  ]);
+}
+
+function renderSummaryState() {
+  const summary = currentBatch.summary;
+  const box = el('div');
+  box.appendChild(summaryRow('Movimientos detectados', String(summary.detected)));
+  box.appendChild(summaryRow('Se incorporarán al confirmar', String(summary.ready_count)));
+  box.appendChild(summaryRow('Posibles duplicados excluidos', String(summary.duplicates_excluded)));
+  box.appendChild(summaryRow('Excepciones pendientes', String(summary.exceptions_pending)));
+  for (const [currency, totals] of Object.entries(summary.totals_by_currency)) {
+    box.appendChild(summaryRow(`Debe / Haber (${currency})`, `${totals.debe} / ${totals.haber}`));
+  }
+  for (const [currency, amount] of Object.entries(summary.opening_by_currency)) {
+    box.appendChild(summaryRow(`Saldo inicial (${currency})`, amount));
+  }
+  for (const [currency, amount] of Object.entries(summary.projected_final_by_currency)) {
+    box.appendChild(summaryRow(`Saldo final tras confirmar (${currency})`, amount, true));
+  }
+  for (const [currency, amount] of Object.entries(summary.unassigned_by_currency)) {
+    box.appendChild(summaryRow(`Anticipos sin asignar (${currency})`, amount));
+  }
+  for (const price of summary.fuel_prices_applied) {
+    box.appendChild(summaryRow('Precio de gasoil aplicado', `${price.price_per_litre} ${price.currency} / litro`));
+  }
+  els.batchArea.appendChild(box);
+
+  const exceptions = currentBatch.line_items.filter((i) => i.status === 'exception' || i.status === 'needs_answer');
+  if (exceptions.length) {
+    const details = el('details', { class: 'secondary-intake' });
+    details.appendChild(el('summary', { text: `Excepciones (${exceptions.length})` }));
+    const checkboxes = [];
+    for (const item of exceptions) {
+      const cb = el('input', { type: 'checkbox' });
+      cb.value = item.id;
+      checkboxes.push(cb);
+      details.appendChild(el('div', { class: 'movement' }, [
+        el('label', { class: 'checklist-item', style: 'font-weight:650' }, [cb, document.createTextNode(item.source_reference || item.original_filename || item.kind)]),
+        el('div', { class: 'hint', text: item.reason || 'Necesita revisión.' }),
+      ]));
+    }
+    const excludeMsg = el('div');
+    const excludeBtn = el('button', { class: 'danger', text: 'Excluir seleccionados' });
+    excludeBtn.addEventListener('click', () => withButton(excludeBtn, async () => {
+      const ids = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
+      if (!ids.length) return banner(excludeMsg, 'Elegí al menos una excepción para excluir.', 'error');
+      try {
+        currentBatch = await request(`/accounts/${state.accountId}/batches/${currentBatch.id}/exceptions/exclude`, {
+          method: 'POST',
+          body: JSON.stringify({ line_item_ids: ids }),
+        });
+        renderBatchArea();
+      } catch (error) {
+        banner(excludeMsg, error.message, 'error');
+      }
+    }));
+    details.appendChild(excludeBtn);
+    details.appendChild(excludeMsg);
+    els.batchArea.appendChild(details);
+  }
+
+  const confirmMsg = el('div');
+  const backBtn = el('button', { class: 'secondary', text: 'Volver y corregir' });
+  backBtn.addEventListener('click', () => { currentBatch = null; stagedFiles = []; renderBatchArea(); });
+  const confirmBtn = el('button', { text: 'Confirmar y generar cuenta' });
+  confirmBtn.disabled = summary.ready_count === 0;
+  confirmBtn.addEventListener('click', () => withButton(confirmBtn, async () => {
+    try {
+      const result = await request(`/accounts/${state.accountId}/batches/${currentBatch.id}/confirm`, { method: 'POST' });
+      currentBatch = result.batch;
+      await refresh();
+      renderBatchArea();
+    } catch (error) {
+      banner(confirmMsg, error.message, 'error');
+    }
+  }));
+  els.batchArea.appendChild(el('div', { class: 'actions' }, [backBtn, confirmBtn]));
+  els.batchArea.appendChild(confirmMsg);
+}
+
+function renderDoneState() {
+  els.batchArea.appendChild(el('div', { class: 'banner ok', text: 'Tu cuenta corriente está lista.' }));
+
+  const excelBtn = el('button', { text: 'Descargar Excel' });
+  excelBtn.addEventListener('click', () => withButton(excelBtn, () => downloadExport('xlsx')));
+  const pdfBtn = el('button', { text: 'Descargar PDF' });
+  pdfBtn.addEventListener('click', () => withButton(pdfBtn, () => downloadExport('pdf')));
+  els.batchArea.appendChild(el('div', { class: 'download-actions' }, [excelBtn, pdfBtn]));
+
+  const newBatchBtn = el('button', { class: 'secondary', text: 'Cargar más documentos' });
+  newBatchBtn.addEventListener('click', () => { currentBatch = null; renderBatchArea(); });
+  els.batchArea.appendChild(newBatchBtn);
+
+  const viewLink = el('button', { class: 'link', text: 'Ver movimientos' });
+  const movementsBox = el('div', { style: 'display:none' });
+  viewLink.addEventListener('click', () => withButton(viewLink, async () => {
+    const isOpen = movementsBox.style.display !== 'none';
+    if (isOpen) { movementsBox.style.display = 'none'; return; }
+    clear(movementsBox);
+    try {
+      const movements = await request(`/accounts/${state.accountId}/movements`);
+      const ledger = movements.filter((m) => !m.is_opening_balance && m.status !== 'review');
+      if (!ledger.length) movementsBox.appendChild(el('p', { class: 'hint', text: 'Sin movimientos confirmados todavía.' }));
+      for (const movement of ledger) movementsBox.appendChild(renderMovementRow(movement));
+      movementsBox.style.display = 'block';
+    } catch (error) {
+      banner(movementsBox, error.message, 'error');
+      movementsBox.style.display = 'block';
+    }
+  }));
+  els.batchArea.appendChild(viewLink);
+  els.batchArea.appendChild(movementsBox);
+}
+
+/* ---------- Cuenta ---------- */
+
 async function loadAccounts(selected) {
-  const rows = await request('/accounts');
-  accounts.innerHTML = '<option value="">Elegir…</option>' + rows.map(a => `<option value="${a.id}">${a.counterparty} — ${a.company}</option>`).join('');
-  if (selected) accounts.value = selected;
-  await refresh();
+  let rows;
+  try {
+    rows = await request('/accounts');
+  } catch (error) {
+    banner(els.accountFormMsg, error.message, 'error');
+    return;
+  }
+  clear(els.accounts);
+  els.accounts.appendChild(el('option', { value: '', text: 'Elegir…' }));
+  for (const account of rows) {
+    els.accounts.appendChild(el('option', { value: account.id, text: `${account.counterparty} — ${account.company}` }));
+  }
+  if (selected) els.accounts.value = selected;
+  state.accountId = els.accounts.value || null;
+  const enabled = !!state.accountId;
+  els.uploadFields.disabled = !enabled;
+  els.resultFields.disabled = !enabled;
+  currentBatch = null;
+  stagedFiles = [];
+  await Promise.all([refresh(), loadExistingBatch()]);
 }
+
 async function createAccount() {
   const company = document.querySelector('#company').value.trim();
   const counterparty = document.querySelector('#counterparty').value.trim();
-  if (!company || !counterparty) return show('Completá empresa y contraparte.');
-  const created = await request('/accounts', {method:'POST', body:JSON.stringify({company, counterparty})});
-  show('Cuenta creada.'); await loadAccounts(created.id);
+  if (!company || !counterparty) return banner(els.accountFormMsg, 'Completá empresa y contraparte.', 'error');
+
+  const openingAmountRaw = document.querySelector('#openingAmount').value.trim();
+  const payload = { company, counterparty };
+  if (openingAmountRaw) {
+    const favor = document.querySelector('#openingFavor').value;
+    if (!favor) return banner(els.accountFormMsg, 'Elegí a favor de quién está el saldo inicial.', 'error');
+    payload.opening_balance_amount = openingAmountRaw;
+    payload.opening_balance_currency = document.querySelector('#openingCurrency').value;
+    payload.opening_balance_favor = favor;
+    const reference = document.querySelector('#openingReference').value.trim();
+    if (reference) payload.opening_balance_reference = reference;
+  }
+
+  try {
+    const created = await request('/accounts', { method: 'POST', body: JSON.stringify(payload) });
+    banner(els.accountFormMsg, 'Cuenta creada.', 'ok');
+    document.querySelector('#company').value = '';
+    document.querySelector('#counterparty').value = '';
+    document.querySelector('#openingAmount').value = '';
+    document.querySelector('#openingReference').value = '';
+    document.querySelector('#openingFavor').value = '';
+    await loadAccounts(created.id);
+  } catch (error) {
+    banner(els.accountFormMsg, error.message, 'error');
+  }
 }
-async function processText() {
-  if (!accounts.value) return show('Primero elegí o creá una cuenta.');
-  const text = document.querySelector('#text').value.trim();
-  const source_reference = document.querySelector('#reference').value.trim();
-  if (!text || !source_reference) return show('Pegá un texto y agregá una referencia de origen.');
-  const result = await request(`/accounts/${accounts.value}/intake/text`, {method:'POST', body:JSON.stringify({text, source_reference})});
-  show(result.created ? 'Movimiento detectado. Revisalo antes de aprobar.' : result.questions.join('\n'));
+
+/* ---------- Modo avanzado (revisión individual, sin cambios de fondo) ---------- */
+
+const dropZone = document.querySelector('#dropZone');
+const fileInput = document.querySelector('#fileInput');
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => { handleFiles(fileInput.files); fileInput.value = ''; });
+
+function handleFiles(fileList) {
+  if (!state.accountId) return banner(els.uploadMsg, 'Primero elegí o creá una cuenta.', 'error');
+  banner(els.uploadMsg, '', '');
+  for (const file of Array.from(fileList)) {
+    uploadQueue.push({ id: `${Date.now()}-${Math.random()}`, file, status: 'en_cola', result: null, error: null });
+  }
+  renderUploadList();
+  for (const entry of uploadQueue.filter((e) => e.status === 'en_cola')) {
+    uploadOneFile(entry);
+  }
+}
+
+async function uploadOneFile(entry) {
+  entry.status = 'subiendo';
+  renderUploadList();
+  try {
+    const form = new FormData();
+    form.append('files', entry.file, entry.file.name);
+    const response = await fetch(`/accounts/${state.accountId}/documents`, { method: 'POST', body: form });
+    let body = null;
+    try { body = await response.json(); } catch (e) { /* sin cuerpo */ }
+    if (!response.ok) throw new Error((body && body.detail) || 'No se pudo subir el archivo.');
+    entry.result = body[0];
+    entry.status = 'listo';
+  } catch (error) {
+    entry.status = 'error';
+    entry.error = error.message || 'La aplicación local se desconectó. Volvé a iniciarla y reintentá.';
+  }
+  renderUploadList();
   await refresh();
 }
-async function approve(id) {
-  await request(`/accounts/${accounts.value}/movements/${id}/approve`, {method:'POST'});
-  show('Movimiento aprobado y saldo actualizado.'); await refresh();
+
+const KIND_LABEL = { spreadsheet: 'Planilla', invoice_pdf: 'Factura PDF', photo: 'Foto o captura', invalido: 'No admitido', unrecognized: 'No reconocido' };
+const OUTCOME_LABEL = {
+  movimiento_creado: 'Reconocido y listo para revisar',
+  necesita_revision: 'Necesita revisión',
+  posible_duplicado: 'Posible duplicado (no se cargó de nuevo)',
+  invalido: 'No se pudo procesar',
+};
+
+function renderUploadList() {
+  clear(els.uploadList);
+  for (const entry of uploadQueue) {
+    const removeBtn = el('button', { class: 'secondary', text: 'Quitar' });
+    removeBtn.addEventListener('click', () => { uploadQueue = uploadQueue.filter((e) => e.id !== entry.id); renderUploadList(); });
+
+    let stateText = 'En cola…';
+    if (entry.status === 'subiendo') stateText = 'Subiendo…';
+    else if (entry.status === 'listo') stateText = `${KIND_LABEL[entry.result.kind] || entry.result.kind} · ${OUTCOME_LABEL[entry.result.outcome] || entry.result.outcome}`;
+    else if (entry.status === 'error') stateText = `Error: ${entry.error}`;
+
+    const row = el('div', { class: 'upload-row' }, [
+      el('span', { class: 'name', text: entry.file.name }),
+      el('span', { class: 'state', text: stateText }),
+    ]);
+    if (entry.status === 'error') {
+      const retryBtn = el('button', { class: 'secondary', text: 'Reintentar' });
+      retryBtn.addEventListener('click', () => uploadOneFile(entry));
+      row.appendChild(retryBtn);
+    }
+    row.appendChild(removeBtn);
+    els.uploadList.appendChild(row);
+  }
 }
-async function discard(id) {
-  const reason = window.prompt('¿Por qué querés denegar este movimiento?', 'No corresponde');
-  if (!reason || !reason.trim()) return;
-  await request(`/accounts/${accounts.value}/movements/${id}/discard`, {method:'POST', body:JSON.stringify({reason})});
-  show('Movimiento denegado. Quedó guardado como descartado y no afecta los saldos.'); await refresh();
+
+async function processText() {
+  if (!state.accountId) return banner(els.intakeMsg, 'Primero elegí o creá una cuenta.', 'error');
+  const text = document.querySelector('#text').value.trim();
+  const sourceReference = document.querySelector('#reference').value.trim();
+  if (!text || !sourceReference) return banner(els.intakeMsg, 'Pegá un texto y agregá una referencia de origen.', 'error');
+
+  try {
+    const result = await request(`/accounts/${state.accountId}/intake/text`, {
+      method: 'POST',
+      body: JSON.stringify({ text, source_reference: sourceReference }),
+    });
+    if (!result.created) {
+      const message = result.questions.length
+        ? `El sistema necesita más información antes de proponer un movimiento:\n${result.questions.join('\n')}`
+        : 'No se detectó información nueva o ya existía un movimiento igual.';
+      banner(els.intakeMsg, message, 'info');
+      return;
+    }
+    banner(els.intakeMsg, 'El sistema interpretó una propuesta. Revisala más abajo antes de aprobar.', 'ok');
+    document.querySelector('#text').value = '';
+    document.querySelector('#reference').value = '';
+    await refresh();
+  } catch (error) {
+    banner(els.intakeMsg, error.message, 'error');
+  }
 }
+
+async function approveAllValid() {
+  if (!state.accountId) return;
+  try {
+    const result = await request(`/accounts/${state.accountId}/movements/approve-all-valid`, { method: 'POST' });
+    banner(els.intakeMsg, `Se aprobaron ${result.count} propuesta(s).`, 'ok');
+    await refresh();
+  } catch (error) {
+    banner(els.intakeMsg, error.message, 'error');
+  }
+}
+
+function renderReviewMovement(movement) {
+  const container = el('div', { class: 'movement' });
+  container.appendChild(el('b', {}, [document.createTextNode(`Propuesta · ${movement.operation_date}`), statusTag(movement)]));
+
+  const msgBox = el('div');
+  const dateInput = el('input', { type: 'date', value: movement.operation_date });
+  const amountInput = el('input', { value: movement.amount, inputmode: 'decimal' });
+  const currencySelect = el('select', {}, [el('option', { value: 'ARS', text: 'ARS' }), el('option', { value: 'USD', text: 'USD' })]);
+  currencySelect.value = movement.currency;
+  const directionSelect = el('select', {}, [
+    el('option', { value: 'company', text: 'Lo entregó la empresa' }),
+    el('option', { value: 'counterparty', text: 'Lo entregó la contraparte' }),
+  ]);
+  directionSelect.value = movement.direction;
+  const descriptionInput = el('input', { value: movement.description });
+  const referenceInput = el('input', { value: movement.external_reference || '' });
+  const unassignedInput = el('input', { value: movement.unassigned_amount, inputmode: 'decimal' });
+  const reasonInput = el('input', { placeholder: 'Motivo de la corrección (obligatorio si cambiás algo)' });
+
+  const saveBtn = el('button', { class: 'secondary', text: 'Guardar corrección' });
+  saveBtn.addEventListener('click', () => withButton(saveBtn, async () => {
+    const reason = reasonInput.value.trim();
+    if (!reason) return banner(msgBox, 'Contá brevemente por qué corregís este dato.', 'error');
+    try {
+      await request(`/accounts/${state.accountId}/movements/${movement.id}/correct`, {
+        method: 'POST',
+        body: JSON.stringify({
+          reason,
+          operation_date: dateInput.value,
+          description: descriptionInput.value.trim(),
+          amount: amountInput.value,
+          currency: currencySelect.value,
+          direction: directionSelect.value,
+          external_reference: referenceInput.value.trim() || null,
+          unassigned_amount: unassignedInput.value || '0.00',
+        }),
+      });
+      banner(els.intakeMsg, 'Corrección guardada.', 'ok');
+      await refresh();
+    } catch (error) {
+      banner(msgBox, error.message, 'error');
+    }
+  }));
+
+  const approveBtn = el('button', { text: 'Aprobar' });
+  approveBtn.addEventListener('click', () => withButton(approveBtn, async () => {
+    try {
+      await request(`/accounts/${state.accountId}/movements/${movement.id}/approve`, { method: 'POST' });
+      banner(els.intakeMsg, 'Movimiento aprobado y saldo actualizado.', 'ok');
+      await refresh();
+    } catch (error) {
+      banner(msgBox, error.message, 'error');
+    }
+  }));
+
+  const denyReasonInput = el('input', { placeholder: 'Motivo del rechazo' });
+  const denyConfirmBtn = el('button', { class: 'danger', text: 'Confirmar rechazo' });
+  const denyBox = el('div', { class: 'reason-box' }, [denyReasonInput, denyConfirmBtn]);
+  denyConfirmBtn.addEventListener('click', () => withButton(denyConfirmBtn, async () => {
+    const reason = denyReasonInput.value.trim();
+    if (!reason) return banner(msgBox, 'Contá brevemente por qué denegás este movimiento.', 'error');
+    try {
+      await request(`/accounts/${state.accountId}/movements/${movement.id}/discard`, { method: 'POST', body: JSON.stringify({ reason }) });
+      banner(els.intakeMsg, 'Movimiento denegado. Quedó guardado como descartado y no afecta los saldos.', 'ok');
+      await refresh();
+    } catch (error) {
+      banner(msgBox, error.message, 'error');
+    }
+  }));
+  const denyBtn = el('button', { class: 'danger', text: 'Denegar' });
+  denyBtn.addEventListener('click', () => denyBox.classList.toggle('open'));
+
+  container.appendChild(el('div', { class: 'proposal-fields' }, [
+    fieldRow('Fecha', dateInput),
+    fieldRow('Importe', amountInput),
+    fieldRow('Moneda', currencySelect),
+    fieldRow('Dirección', directionSelect),
+    el('div', { class: 'full' }, [el('label', { text: 'Descripción' }), descriptionInput]),
+    fieldRow('Referencia externa', referenceInput),
+    fieldRow('Anticipo sin asignar', unassignedInput),
+    el('div', { class: 'full' }, [el('label', { text: 'Motivo de corrección' }), reasonInput]),
+  ]));
+  container.appendChild(saveBtn);
+  container.appendChild(el('div', { class: 'actions' }, [approveBtn, denyBtn]));
+  container.appendChild(denyBox);
+  container.appendChild(msgBox);
+  return container;
+}
+
+const PENDING_KIND_LABEL = { spreadsheet_row: 'Fila de planilla', spreadsheet_mapping: 'Planilla — elegir columnas', invoice_pdf: 'Factura PDF', photo: 'Foto o captura' };
+
+function renderPendingUpload(pending) {
+  const container = el('div', { class: 'movement' });
+  container.appendChild(el('b', {}, [
+    document.createTextNode(`${PENDING_KIND_LABEL[pending.kind] || pending.kind} · ${pending.original_filename}`),
+    el('span', { class: 'tag review', text: 'Necesita revisión' }),
+  ]));
+  container.appendChild(el('div', { class: 'hint', text: pending.message }));
+
+  const msgBox = el('div');
+  const removeBtn = el('button', { class: 'danger', text: 'Quitar' });
+  removeBtn.addEventListener('click', () => withButton(removeBtn, async () => {
+    try {
+      await request(`/accounts/${state.accountId}/documents/${pending.id}`, { method: 'DELETE' });
+      await refresh();
+    } catch (error) {
+      banner(msgBox, error.message, 'error');
+    }
+  }));
+
+  if (pending.kind === 'spreadsheet_mapping') {
+    const table = el('table', { class: 'preview-table' });
+    pending.preview_rows.forEach((row, rowIndex) => {
+      table.appendChild(el('tr', {}, row.map((cell, colIndex) => el('td', { text: rowIndex === 0 ? `col ${colIndex}` : cell }))));
+    });
+    container.appendChild(table);
+    if (pending.sheet_names && pending.sheet_names.length > 1) {
+      container.appendChild(el('div', { class: 'hint', text: `Hojas disponibles: ${pending.sheet_names.join(', ')} (se usa: ${pending.sheet_name})` }));
+    }
+
+    const headerRowInput = el('input', { type: 'number', value: '0', min: '0' });
+    const fechaInput = el('input', { type: 'number', value: '0', min: '0' });
+    const conceptoInput = el('input', { type: 'number', value: '1', min: '0' });
+    const debeInput = el('input', { type: 'number', value: '2', min: '0' });
+    const haberInput = el('input', { type: 'number', value: '3', min: '0' });
+    const monedaInput = el('input', { type: 'number', value: '4', min: '0' });
+    const comprobanteInput = el('input', { type: 'number', placeholder: '(opcional)' });
+
+    const confirmBtn = el('button', { text: 'Confirmar mapeo e importar' });
+    confirmBtn.addEventListener('click', () => withButton(confirmBtn, async () => {
+      try {
+        const body = {
+          header_row_index: Number(headerRowInput.value),
+          fecha: Number(fechaInput.value),
+          concepto: Number(conceptoInput.value),
+          debe: Number(debeInput.value),
+          haber: Number(haberInput.value),
+          moneda: Number(monedaInput.value),
+        };
+        if (comprobanteInput.value !== '') body.comprobante = Number(comprobanteInput.value);
+        const result = await request(`/accounts/${state.accountId}/documents/${pending.id}/resolve-mapping`, { method: 'POST', body: JSON.stringify(body) });
+        banner(els.intakeMsg, `Mapeo aplicado: ${result.created} fila(s) lista(s), ${result.needs_review} necesitan revisión.`, 'ok');
+        await refresh();
+      } catch (error) {
+        banner(msgBox, error.message, 'error');
+      }
+    }));
+
+    container.appendChild(el('div', { class: 'proposal-fields' }, [
+      fieldRow('Fila de encabezados (0 = primera)', headerRowInput),
+      fieldRow('Columna Fecha', fechaInput),
+      fieldRow('Columna Concepto', conceptoInput),
+      fieldRow('Columna Debe', debeInput),
+      fieldRow('Columna Haber', haberInput),
+      fieldRow('Columna Moneda', monedaInput),
+      fieldRow('Columna Comprobante (opcional)', comprobanteInput),
+    ]));
+    container.appendChild(confirmBtn);
+  } else {
+    const extracted = pending.extracted || {};
+    const dateInput = el('input', { type: 'date', value: extracted.operation_date || extracted.invoice_date || '' });
+    const amountInput = el('input', { value: extracted.amount || extracted.debe || extracted.haber || extracted.total_amount || '', inputmode: 'decimal', placeholder: 'Importe' });
+    const currencySelect = el('select', {}, [el('option', { value: 'ARS', text: 'ARS' }), el('option', { value: 'USD', text: 'USD' })]);
+    currencySelect.value = extracted.currency || 'ARS';
+    const directionSelect = el('select', {}, [
+      el('option', { value: 'company', text: 'Lo entregó la empresa' }),
+      el('option', { value: 'counterparty', text: 'Lo entregó la contraparte' }),
+    ]);
+    directionSelect.value = extracted.haber ? 'counterparty' : pending.kind === 'invoice_pdf' ? 'counterparty' : 'company';
+    const descriptionInput = el('input', { value: extracted.description || (extracted.invoice_number ? `Factura ${extracted.invoice_number}` : ''), placeholder: 'Descripción' });
+    const referenceInput = el('input', { value: extracted.invoice_number || '', placeholder: 'Referencia externa (opcional)' });
+
+    if (Object.values(extracted).some((v) => v)) {
+      const hints = Object.entries(extracted).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(' · ');
+      container.appendChild(el('div', { class: 'hint', text: `Se detectó automáticamente: ${hints}` }));
+    }
+
+    const saveBtn = el('button', { text: 'Guardar y crear movimiento' });
+    saveBtn.addEventListener('click', () => withButton(saveBtn, async () => {
+      if (!dateInput.value || !amountInput.value || !descriptionInput.value.trim()) {
+        return banner(msgBox, 'Completá al menos fecha, importe y descripción.', 'error');
+      }
+      try {
+        await request(`/accounts/${state.accountId}/documents/${pending.id}/resolve`, {
+          method: 'POST',
+          body: JSON.stringify({
+            operation_date: dateInput.value,
+            description: descriptionInput.value.trim(),
+            amount: amountInput.value,
+            currency: currencySelect.value,
+            direction: directionSelect.value,
+            external_reference: referenceInput.value.trim() || null,
+          }),
+        });
+        banner(els.intakeMsg, 'Documento completado y agregado como propuesta.', 'ok');
+        await refresh();
+      } catch (error) {
+        banner(msgBox, error.message, 'error');
+      }
+    }));
+
+    container.appendChild(el('div', { class: 'proposal-fields' }, [
+      fieldRow('Fecha', dateInput),
+      fieldRow('Importe', amountInput),
+      fieldRow('Moneda', currencySelect),
+      fieldRow('Dirección', directionSelect),
+      el('div', { class: 'full' }, [el('label', { text: 'Descripción' }), descriptionInput]),
+      fieldRow('Referencia externa', referenceInput),
+    ]));
+    container.appendChild(saveBtn);
+  }
+
+  container.appendChild(removeBtn);
+  container.appendChild(msgBox);
+  return container;
+}
+
+function statusTag(movement) {
+  if (movement.status === 'review') return el('span', { class: 'tag review', text: 'Pendiente de aprobación' });
+  if (movement.status === 'discarded') return el('span', { class: 'tag discarded', text: 'Descartado' });
+  if (movement.reversal_of) return el('span', { class: 'tag reversed', text: 'Es una reversión' });
+  if (movement.reversed) return el('span', { class: 'tag reversed', text: 'Revertido' });
+  return el('span', { class: 'tag confirmed', text: 'Confirmado' });
+}
+
+function reverseControls(movement) {
+  const box = el('div', { class: 'reason-box' });
+  const reasonInput = el('input', { placeholder: 'Motivo de la reversión' });
+  const msgBox = el('div');
+  const confirmBtn = el('button', { class: 'danger', text: 'Confirmar reversión' });
+  confirmBtn.addEventListener('click', () => withButton(confirmBtn, async () => {
+    const reason = reasonInput.value.trim();
+    if (!reason) return banner(msgBox, 'Contá brevemente por qué revertís este movimiento.', 'error');
+    try {
+      await request(`/accounts/${state.accountId}/movements/${movement.id}/reverse`, { method: 'POST', body: JSON.stringify({ reason }) });
+      banner(els.intakeMsg, 'Se registró un contramovimiento que revierte el original. Nada se borró.', 'ok');
+      await refresh();
+    } catch (error) {
+      banner(msgBox, error.message, 'error');
+    }
+  }));
+  box.appendChild(reasonInput);
+  box.appendChild(confirmBtn);
+  box.appendChild(msgBox);
+
+  const toggleBtn = el('button', { class: 'link', text: 'Revertir (genera un contramovimiento)' });
+  toggleBtn.addEventListener('click', () => box.classList.toggle('open'));
+  return el('div', {}, [toggleBtn, box]);
+}
+
+function renderMovementRow(movement) {
+  const directionText = movement.direction === 'company' ? 'Entregó la empresa' : movement.direction === 'counterparty' ? 'Entregó la contraparte' : 'Informativo';
+  const title = el('b', { text: `${movement.operation_date} · ${movement.amount} ${movement.currency}` });
+  title.appendChild(statusTag(movement));
+  const row = el('div', { class: 'movement' }, [
+    title,
+    el('br'),
+    document.createTextNode(movement.description),
+    el('br'),
+    el('small', { text: `${directionText}${movement.external_reference ? ' · ref: ' + movement.external_reference : ''}` }),
+  ]);
+  if (movement.status === 'confirmed' && !movement.is_opening_balance && !movement.reversal_of && !movement.reversed) {
+    row.appendChild(reverseControls(movement));
+  }
+  return row;
+}
+
+async function saveConfig() {
+  if (!state.accountId) return;
+  const displayName = document.querySelector('#displayName').value.trim();
+  const logoInput = document.querySelector('#logoInput');
+  const form = new FormData();
+  if (displayName) form.append('display_name', displayName);
+  if (logoInput.files[0]) form.append('logo', logoInput.files[0]);
+  try {
+    const response = await fetch(`/accounts/${state.accountId}/config`, { method: 'POST', body: form });
+    const body = await response.json();
+    if (!response.ok) throw new Error(body.detail || 'No se pudo guardar la configuración.');
+    banner(els.configMsg, 'Configuración guardada.', 'ok');
+    logoInput.value = '';
+    await loadConfig();
+  } catch (error) {
+    banner(els.configMsg, error.message, 'error');
+  }
+}
+
+async function removeLogo() {
+  if (!state.accountId) return;
+  try {
+    await request(`/accounts/${state.accountId}/config/logo`, { method: 'DELETE' });
+    banner(els.configMsg, 'Logo quitado.', 'ok');
+    await loadConfig();
+  } catch (error) {
+    banner(els.configMsg, error.message, 'error');
+  }
+}
+
+async function loadConfig() {
+  if (!state.accountId) return;
+  try {
+    const config = await request(`/accounts/${state.accountId}/config`);
+    document.querySelector('#displayName').value = config.display_name;
+    if (config.has_logo) {
+      els.logoPreview.src = `/accounts/${state.accountId}/config/logo?t=${Date.now()}`;
+      els.logoPreview.style.display = 'block';
+    } else {
+      els.logoPreview.style.display = 'none';
+    }
+  } catch (error) {
+    banner(els.configMsg, error.message, 'error');
+  }
+}
+
+async function downloadExport(kind) {
+  if (!state.accountId) return;
+  try {
+    const response = await fetch(`/accounts/${state.accountId}/export.${kind}`);
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail || 'No se pudo generar la descarga.');
+    }
+    const blob = await response.blob();
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `cuenta-corriente.${kind}`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    banner(els.configMsg, error.message, 'error');
+  }
+}
+
 async function refresh() {
-  if (!accounts.value) { document.querySelector('#balance').textContent='Elegí una cuenta'; document.querySelector('#movements').innerHTML=''; return; }
-  const currency = document.querySelector('#currency').value;
-  const [balance, movements] = await Promise.all([request(`/accounts/${accounts.value}/balance/${currency}`), request(`/accounts/${accounts.value}/movements`)]);
-  document.querySelector('#balance').textContent = `${balance.confirmed_label}: ${balance.confirmed_amount} ${currency}`;
-  document.querySelector('#pending').textContent = balance.pending_count ? `Proyectado: ${balance.projected_amount} ${currency} · ${balance.pending_count} pendiente(s)` : 'Sin movimientos pendientes';
-  document.querySelector('#movements').innerHTML = movements.filter(m => m.currency===currency).map(m => `<div class="movement"><b>${m.operation_date} · ${m.amount} ${m.currency}</b><br>${m.description}<br><small>${m.status==='review'?'Pendiente de aprobación':m.status==='confirmed'?'Confirmado':'Descartado'}</small>${m.status==='review'?`<div class="actions"><button class="secondary" onclick="approve('${m.id}')">Aprobar</button><button class="danger" onclick="discard('${m.id}')">Denegar</button></div>`:''}</div>`).join('') || 'Sin movimientos.';
+  if (!state.accountId) {
+    clear(els.summary);
+    els.summary.appendChild(el('p', { class: 'hint', text: 'Elegí una cuenta.' }));
+    clear(els.movements);
+    els.movements.textContent = 'Elegí una cuenta para ver sus movimientos.';
+    clear(els.reviewArea);
+    return;
+  }
+  const currency = els.currency.value;
+  let balance, movements, pendingDocuments;
+  try {
+    [balance, movements, pendingDocuments] = await Promise.all([
+      request(`/accounts/${state.accountId}/balance/${currency}`),
+      request(`/accounts/${state.accountId}/movements`),
+      request(`/accounts/${state.accountId}/documents`),
+    ]);
+  } catch (error) {
+    banner(els.summary, error.message, 'error');
+    return;
+  }
+
+  await loadConfig();
+
+  clear(els.summary);
+  const rows = [
+    ['Saldo inicial', `${balance.opening_label}: ${balance.opening_amount} ${currency}`],
+    ['Saldo confirmado (saldo final)', `${balance.confirmed_label}: ${balance.confirmed_amount} ${currency}`],
+    ['Saldo proyectado (incluye pendientes)', `${balance.projected_label}: ${balance.projected_amount} ${currency}`],
+    ['Anticipos sin asignar', `${balance.unassigned_amount} ${currency}`],
+    ['Movimientos pendientes de aprobación', String(balance.pending_count)],
+    ['Documentos que necesitan revisión', String(pendingDocuments.length)],
+  ];
+  for (const [label, value] of rows) {
+    els.summary.appendChild(el('div', { class: 'summary-item' }, [
+      el('span', { class: 'summary-label', text: label }),
+      el('span', { class: 'summary-value', text: value }),
+    ]));
+  }
+
+  clear(els.reviewArea);
+  const reviewMovements = movements.filter((m) => m.status === 'review');
+  if (!reviewMovements.length && !pendingDocuments.length) {
+    els.reviewArea.appendChild(el('p', { class: 'hint', text: 'No hay nada pendiente de revisión.' }));
+  } else {
+    for (const movement of reviewMovements) els.reviewArea.appendChild(renderReviewMovement(movement));
+    for (const pending of pendingDocuments) els.reviewArea.appendChild(renderPendingUpload(pending));
+  }
+
+  clear(els.movements);
+  const ledger = movements.filter((m) => m.currency === currency && !m.is_opening_balance && m.status !== 'review');
+  if (!ledger.length) {
+    els.movements.textContent = 'Sin movimientos confirmados todavía.';
+  } else {
+    for (const movement of ledger) els.movements.appendChild(renderMovementRow(movement));
+  }
 }
-function show(text) { document.querySelector('#message').textContent=text; }
+
 loadAccounts();
 </script>
 </body>

@@ -1,0 +1,13 @@
+{
+  "created": false,
+  "status": "needs_clarification",
+  "extracted": {
+    "amount": "250000.00",
+    "currency": "ARS",
+    "operation_date": "2026-09-13"
+  },
+  "questions": [
+    "¿Quién entregó el dinero o valor: la empresa o la contraparte?"
+  ],
+  "human_review_required": true
+}

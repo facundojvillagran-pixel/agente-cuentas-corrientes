@@ -1,0 +1,25 @@
+{
+  "created": true,
+  "status": "review",
+  "extracted": {
+    "amount": "700000.00",
+    "currency": "ARS",
+    "direction": "company",
+    "operation_date": "2026-07-20"
+  },
+  "questions": [],
+  "human_review_required": true,
+  "proposal": {
+    "operation_date": "2026-07-20",
+    "description": "El 20/07/2026 le transferimos $ 700.000 como anticipo general",
+    "amount": "700000.00",
+    "currency": "ARS",
+    "direction": "company",
+    "external_reference": null,
+    "unassigned_amount": "700000.00",
+    "evidence": {
+      "kind": "conversation",
+      "reference": "mensaje-administracion-anonimizado-01"
+    }
+  }
+}

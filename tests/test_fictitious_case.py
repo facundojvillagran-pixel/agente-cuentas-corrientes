@@ -60,6 +60,46 @@ class FictitiousAccountTest(unittest.TestCase):
         self.add(Movement(date(2026, 7, 1), "USD", 10, "USD", Direction.COUNTERPARTY, MovementStatus.CONFIRMED, evidence("usd")))
         self.assertEqual(self.account.balances(), {"ARS": Decimal("100.00"), "USD": Decimal("-10.00")})
 
+    def test_correct_movement_requires_review_status_and_reason(self) -> None:
+        proposal = Movement(date(2026, 7, 1), "Propuesta", 100, "ARS", Direction.COMPANY, MovementStatus.REVIEW, evidence("prop"))
+        self.add(proposal)
+
+        with self.assertRaises(ValueError):
+            self.account.correct_movement(proposal.id, actor="contador", reason="", amount=Decimal("200"))
+
+        corrected = self.account.correct_movement(proposal.id, actor="contador", reason="Importe mal cargado", amount=Decimal("200"))
+        self.assertEqual(corrected.amount, Decimal("200.00"))
+        self.assertEqual(corrected.id, proposal.id)
+        self.assertEqual(corrected.version, proposal.version + 1)
+
+        confirmed = self.account.approve_movement(proposal.id, actor="contador")
+        with self.assertRaises(ValueError):
+            self.account.correct_movement(confirmed.id, actor="contador", reason="tarde", amount=Decimal("1"))
+
+    def test_reverse_movement_adds_counter_movement_without_touching_original(self) -> None:
+        confirmed = Movement(date(2026, 7, 1), "Transferencia", 100, "ARS", Direction.COMPANY, MovementStatus.CONFIRMED, evidence("tr"))
+        self.add(confirmed)
+        self.assertEqual(self.account.balances(), {"ARS": Decimal("100.00")})
+
+        counter = self.account.reverse_movement(confirmed.id, actor="contador", reason="Se cargó por error")
+        self.assertEqual(counter.reversal_of, confirmed.id)
+        self.assertEqual(counter.direction, Direction.COUNTERPARTY)
+        self.assertEqual(counter.status, MovementStatus.CONFIRMED)
+        self.assertEqual(self.account.balances(), {"ARS": Decimal("0.00")})
+
+        original_still_present = next(m for m in self.account.movements if m.id == confirmed.id)
+        self.assertEqual(original_still_present, confirmed)
+        self.assertEqual(len(self.account.movements), 2)
+
+        with self.assertRaises(ValueError):
+            self.account.reverse_movement(confirmed.id, actor="contador", reason="otra vez")
+
+    def test_reverse_movement_rejects_non_confirmed(self) -> None:
+        proposal = Movement(date(2026, 7, 1), "Propuesta", 100, "ARS", Direction.COMPANY, MovementStatus.REVIEW, evidence("prop2"))
+        self.add(proposal)
+        with self.assertRaises(ValueError):
+            self.account.reverse_movement(proposal.id, actor="contador", reason="motivo")
+
 
 if __name__ == "__main__":
     unittest.main()
